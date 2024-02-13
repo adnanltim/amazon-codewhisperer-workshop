@@ -1,0 +1,42 @@
+service: aws-code-whisperer-serverless-app
+frameworkVersion: '3'
+provider:
+  name: aws
+  runtime: nodejs18.x
+  deploymentMethod: direct
+  region: us-east-1
+functions:
+  index:
+    handler: index.handler
+    events:
+      - httpApi:
+          path: /
+          method: get
+  imageProcessing:
+    handler: imageProcessing.handler
+    events:
+    	# Provide the ARN of your queue
+      - sqs: arn:aws:sqs:us-east-1:749757816017:recieve-sns-notification-for-images
+  listLable:
+    handler: listLable.handler
+    events:
+      - httpApi:
+          path: /list-labels
+          method: get
+  sendImageLabel:
+    handler: sendImageLabel.handler
+    events:
+      # Provide the ARN of your queue
+      - sqs: arn:aws:sqs:us-east-1:749757816017:processImageRekognitionPayload
+resources:
+  Resources:
+    SuperTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: dynamoDBInsertImageRekognition
+    MyQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: "processImageRekognitionPayload"
+
+
