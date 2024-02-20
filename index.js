@@ -4,22 +4,22 @@ const {AWS} = require('./aws-config')
 
 // Function to get a file from url
 const downloadImage = async (imageUrl, name) => {
+  let uploadResponse = [];
   const url = imageUrl;
-  console.log('image is', url)
   const response = await axios({
     url,
     method: 'GET',
     responseType: 'arraybuffer',
   }).then((response) => {
+     console.log('image is', response.data)
     return uploadImage(response.data, name);
   });
- 
 }
 
 // Function to upload image to S3
 const uploadImage = async (image, name) => {
   const params = {
-    Bucket: 'code-whisperer-image-transformation',
+    Bucket: process.env.S3_BUCKET,
     Key: name,
     Body: image,
   };
@@ -29,7 +29,7 @@ const uploadImage = async (image, name) => {
   console.log("respose from image", uploadResult)
   const snsMessage = {"key": name}
   const publishMessages = await publishMessage(JSON.stringify(snsMessage));
-  return uploadResult;
+  return publishMessages;
 }
 
 // function to convert url into encoded url
@@ -53,7 +53,7 @@ const publishMessage = async (messageBody) => {
   const sns = new AWS.SNS();
   const params = {
     Message: messageBody,
-    TopicArn: "arn:aws:sns:us-east-1:749757816017:image-transformation-topic",
+    TopicArn: process.env.snsTopicArn,
   };
   const message = await sns.publish(params).promise();
   console.log("message published", message);
@@ -64,7 +64,7 @@ const publishMessage = async (messageBody) => {
 const fetchMessages = async () => {
   const sns = new AWS.SNS();
   const params = {
-    TopicArn: "arn:aws:sns:us-east-1:749757816017:image-transformation-topic",
+    TopicArn: process.env.snsTopicArn,
   };
   const messages = await sns.listSubscriptionsByTopic(params).promise();
   console.log("messages fetched", messages);

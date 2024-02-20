@@ -5,12 +5,15 @@ module.exports.handler = async (event) => {
       const labelNames = [];
       const messageBody = JSON.parse(record.body);
       const messageContent = JSON.parse(messageBody.Message);
-      console.log("message inside sendImageLabel ---", messageContent)
       const imageLabels = await detectImageLabels(messageContent.key);
+      let receiptHandle = record.receiptHandle;
       for (const label of imageLabels) {
         labelNames.push(label.Name);
       }
-      await saveLabelsToDynamoDB(labelNames,messageContent.key);
+      const snsMessage = await saveLabelsToDynamoDB(labelNames,messageContent.key);
+      console.log("message inside sendImageLabel ---", snsMessage)
+      await publishToSNS(snsMessage);
+      await deleteMessage(receiptHandle);
    }
    
 }
@@ -46,7 +49,7 @@ module.exports.handler = async (event) => {
     }
     snsImageNotifications.push(imageObject);
     await dynamoDB.put(params).promise();
-    await publishToSNS(snsImageNotifications);
+    return snsImageNotifications;
   }
 
 // function to publish message to sns topic
@@ -59,4 +62,14 @@ const publishToSNS = async (message) => {
   }
 
   let snsPush = await sns.publish(params).promise();
+}
+
+// function to delete message from SQS queue
+const deleteMessage = async (receiptHandle) => {
+  const sqs = new AWS.SQS();
+  const params = {
+    QueueUrl: 'https://sqs.us-east-1.amazonaws.com/749757816017/recieve-sns-notification-for-images',
+    ReceiptHandle: receiptHandle
+  }
+  await sqs.deleteMessage(params).promise();
 }

@@ -5,17 +5,18 @@ module.exports.handler = async (event) => {
   for (const record of event.Records) {
       const messageBody = JSON.parse(record.body);
       const messageContent = JSON.parse(messageBody.Message)
-      emailBody.push(messageContent[0]);
+      emailBody.push(messageContent[0])
+      console.log("message inside sendImageLabel ---", emailBody)
    }
-  return sendImageLabel(emailBody);
+  return sendEmail(emailBody);
 }
 
 // function to send json data in a table using ses
-function sendImageLabel(data) {
+function sendEmail(data) {
    const params = {
       Destination: {
          ToAddresses: [
-            'adnankh07@gmail.com'
+            'adnan.khan@ltimindtree.com'
          ]
       },
       Message: {
@@ -25,11 +26,11 @@ function sendImageLabel(data) {
             }
          },
          Subject: {
-            Data: "Image Label"
+            Data: "Amazon Code Whisperer Workshop"
          }
       },
       Source: "adnan.khan@ltimindtree.com"
    };
    return new AWS.SES({apiVersion: '2010-12-01'}).sendEmail(params).promise();
 }
-  
+ 
